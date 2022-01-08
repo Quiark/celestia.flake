@@ -2,42 +2,75 @@
     description = "Run Celestia";
     inputs.nixpkgs.url = github:NixOS/nixpkgs/21.11;
     inputs.deploy-rs.url = "github:serokell/deploy-rs";
-    outputs = { self, nixpkgs, deploy-rs }: {
+    outputs = { self, nixpkgs, deploy-rs }: rec {
+
 	deploy.nodes.tufir = {
-          hostname = "tufir.valid";
-          sshUser = "root";
-          profiles.celes = {
-            user = "root";
-            path = deploy-rs.lib.x86_64-linux.activate.noop self.defaultPackage.x86_64-linux;
+      hostname = "tufir.valid";
+      sshUser = "root";
+      profiles.celes = {
+        user = "root";
+        path = deploy-rs.lib.x86_64-linux.activate.noop self.defaultPackage.x86_64-linux;
+      };
+    };
+
+    defaultPackage.x86_64-linux = appd;
+
+    appd = 
+        with import nixpkgs { system = "x86_64-linux"; };
+        buildGoModule rec {
+          pname = "celestia-app";
+          name = "celestia-app";
+
+          src = fetchFromGitHub {
+            owner = "celestiaorg";
+            repo = "celestia-app";
+            rev = "c2adcb157cc39f58368a5779b01e655520f67890";
+            sha256 = "sha256-0zRWhXy/LMdtJz/+5AZZmfBO8XybiJ47svndwUq6+GA=";
+          };
+
+          buildInputs = [ go_1_17 packr ];
+
+          runVend = false;
+          vendorSha256 = "sha256-R6dggu8f/fteiCSEe315m4iG4gnXj2SOLFz3hZbdVyo=";
+
+          meta = with lib; {
+            description = "Modular data availability layer";
+            homepage = "https://github.com/celestiaorg/celestia-app";
+            license = licenses.asl20;
+            maintainers = with maintainers; [ ];
+            platforms = platforms.linux ++ platforms.darwin;
+            mainProgram = "celestia-appd";
           };
         };
-        defaultPackage.x86_64-linux =
-            with import nixpkgs { system = "x86_64-linux"; };
-            buildGoModule rec {
-              pname = "celestia";
-              name = "celestia";
-              # version = "144cd92ef02898bf190822b3ed1e9396b58ef424";
 
-              src = fetchFromGitHub {
-                owner = "celestiaorg";
-                repo = "celestia-app";
-                rev = "144cd92ef02898bf190822b3ed1e9396b58ef424";
-                sha256 = "1cl7wpca539p82md6jyfqp41s83zw055c21zjqqyxiphgjzqj4ra";
-              };
+    node = 
+    with import nixpkgs { system = "x86_64-linux"; };
+      buildGoModule rec {
+          pname = "celestia-node";
+          name = "celestia-node";
 
-              buildInputs = [ go_1_17 packr ];
+          src = fetchFromGitHub {
+            owner = "celestiaorg";
+            repo = "celestia-node";
+            rev = "f9ad11e4c651a78fc06ca697df0dcac10073e3c3";
+            sha256 = "sha256-cmdt5cU50O8vr4rvdFIZsMqR1fM/i5u/Hd0BL6JVCj8=";
+          };
 
-              runVend = false;
-              vendorSha256 = "sha256-R6dggu8f/fteiCSEe315m4iG4gnXj2SOLFz3hZbdVyo=";
+          buildInputs = [ go_1_17 packr ];
 
-              meta = with lib; {
-                description = "Modular data availability layer";
-                homepage = "https://github.com/celestiaorg/celestia-app";
-                license = licenses.asl20;
-                maintainers = with maintainers; [ ];
-                platforms = platforms.linux ++ platforms.darwin;
-              };
-            };
+          runVend = false;
+          vendorSha256 = "sha256-5//vHtv2oPhoKvcYZ85EYFza1bscgrpFNQPzrDW/A10=";
 
-    };
+          meta = with lib; {
+            description = "Modular data availability layer, full node";
+            homepage = "https://github.com/celestiaorg/celestia-node";
+            license = licenses.asl20;
+            maintainers = with maintainers; [ ];
+            platforms = platforms.linux ++ platforms.darwin;
+            mainProgram = "celestia-node";
+          };
+      };
+
+
+  };
 }
